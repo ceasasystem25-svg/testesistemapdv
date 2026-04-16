@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Sistema de Vendas Pro v10.13 - Relatórios A4 Personalizados</title>
+    <title>Sistema de Vendas Pro v10.14 - Romaneio de Carga</title>
     <style>
         :root { --primary: #2563eb; --success: #10b981; --danger: #ef4444; --warning: #f59e0b; --bg: #f3f4f6; --text: #1f2937; --info: #0ea5e9; }
         
@@ -76,7 +76,7 @@
 
         @media screen { #receipt-print { display: none; } }
         
-        /* IMPRESSORA TÉRMICA (CUPOM FORTE E CENTRALIZADO) */
+        /* IMPRESSORA TÉRMICA E RELATÓRIOS A4 */
         @media print {
             @page { margin: 0; } 
             body { margin: 0; padding: 0; background: #fff; height: auto !important; overflow: visible !important; }
@@ -85,7 +85,7 @@
             #receipt-print { 
                 display: block !important; 
                 position: relative !important;
-                width: 76mm; 
+                width: 76mm; /* Default para o cupom. Para A4, o JS muda para 100% dinamicamente */
                 margin: 0 auto; 
                 padding: 0 2mm; 
                 box-sizing: border-box; 
@@ -139,6 +139,7 @@
                                 <button class="btn btn-danger" onclick="cancelarSelecionados()" style="padding:4px 8px; font-size:1.1rem;" title="Cancelar Venda">❌</button>
                             </div>
                             <div style="border-left: 1px solid #cbd5e1; height: 30px; margin: 0 5px;"></div>
+                            <button class="btn btn-warning" onclick="gerarRomaneio()" style="color: white;">📦 Gerar Romaneio</button>
                             <button class="btn btn-ghost" onclick="abrirModalImpressaoAgrupada()">🖨️ Relatório Lote</button>
                             <button id="btn-toggle-canceladas" class="btn btn-outline" onclick="toggleCanceladas()">Ver Canceladas</button>
                             <button class="btn btn-success" onclick="openSaleModal()">+ Nova Venda (F1)</button>
@@ -437,7 +438,6 @@
 
         function maskBRL(input) { let v = input.value.replace(/\D/g, ''); if (!v) { input.value = ''; return; } v = (v / 100).toFixed(2) + ''; v = v.replace(".", ","); v = v.replace(/(\d)(?=(\d{3})+(?!\d))/g, "$1."); input.value = v; }
 
-        // BUSCA CEP AUTOMÁTICO
         async function buscarCEP(cep) {
             let cepLimpo = cep.replace(/\D/g, '');
             if (cepLimpo.length !== 8) return;
@@ -686,6 +686,78 @@
             return html; 
         }
         
+        // --- NOVO: GERAR ROMANEIO DE CARGA ---
+        function gerarRomaneio() {
+            const checks = document.querySelectorAll('.check-venda:checked');
+            if (checks.length === 0) return alert("Selecione as vendas (caixinhas) para gerar o romaneio de carga.");
+
+            const idsSelecionados = Array.from(checks).map(cb => parseInt(cb.value));
+            const vendas = db.vendas.filter(v => idsSelecionados.includes(v.id));
+
+            let produtosAgrupados = {};
+            let vendedores = new Set();
+
+            vendas.forEach(v => {
+                vendedores.add(v.vendedor || 'Sem Vendedor');
+                if (v.carrinho && v.carrinho.length > 0) {
+                    v.carrinho.forEach(item => {
+                        let key = item.prodId ? item.prodId + '-' + item.nome : item.nome;
+                        if (!produtosAgrupados[key]) {
+                            produtosAgrupados[key] = { id: item.prodId || '-', nome: item.nome, qtd: 0, unidade: item.unidade || 'UN' };
+                        }
+                        produtosAgrupados[key].qtd += item.qtd;
+                    });
+                }
+            });
+
+            let nomeVendedor = Array.from(vendedores).join(', ');
+
+            let html = '<div style="padding: 20px; background: white; font-family: Arial, sans-serif;">';
+            html += `<div style="display: flex; align-items: center; justify-content: space-between; border-bottom: 2px solid #000; padding-bottom: 15px; margin-bottom: 20px;">
+                        <div style="display: flex; align-items: center; gap: 15px;">
+                            <img src="${LOGO_URL}" style="max-height: 80px;">
+                            <div>
+                                <h3 style="margin: 0; font-size: 18px;">LA SISTEMAS E VAREJÃO</h3>
+                                <p style="margin: 3px 0; font-size: 13px; color: #444;">Relatório de Romaneio</p>
+                            </div>
+                        </div>
+                        <div style="text-align: right;">
+                            <h2 style="margin: 0; color: #1e293b;">ROMANEIO DE CARGA</h2>
+                            <p style="margin: 5px 0 0 0; color: #64748b; font-size: 12px;">Emissão: ${new Date().toLocaleDateString('pt-BR')} ${new Date().toLocaleTimeString('pt-BR', {hour: '2-digit', minute:'2-digit'})}</p>
+                            <p style="margin: 5px 0 0 0; color: #64748b; font-size: 14px;">Vendedor(es): <b style="color: #000;">${nomeVendedor.toUpperCase()}</b></p>
+                        </div>
+                    </div>`;
+
+            html += `<p style="font-size: 15px;">Total de Pedidos para este carregamento: <b>${vendas.length}</b></p>`;
+
+            html += '<table style="width:100%; border-collapse: collapse; font-size: 14px; margin-top: 10px;">';
+            html += '<thead style="background: #f1f5f9; border-bottom: 2px solid #000;"><tr><th style="padding: 10px; text-align:left; width:15%;">Código</th><th style="padding: 10px; text-align:left; width:60%;">Produto</th><th style="padding: 10px; text-align:right; width:25%;">Qtd Total para Separar</th></tr></thead><tbody>';
+
+            let produtosArray = Object.values(produtosAgrupados);
+            produtosArray.sort((a, b) => a.nome.localeCompare(b.nome)); // Ordem Alfabética
+
+            produtosArray.forEach(p => {
+                html += `<tr style="border-bottom: 1px solid #e2e8f0;">
+                            <td style="padding: 10px; color:#666;">${p.id}</td>
+                            <td style="padding: 10px;"><b>${p.nome.toUpperCase()}</b></td>
+                            <td style="padding: 10px; text-align:right; font-size: 16px;"><b>${formatCurrency(p.qtd)} ${p.unidade}</b></td>
+                         </tr>`;
+            });
+
+            if (produtosArray.length === 0) {
+                 html += `<tr><td colspan="3" style="padding: 10px; text-align:center;">Nenhum produto detalhado nestas vendas.</td></tr>`;
+            }
+
+            html += `</tbody></table>`;
+            html += `<br><br><br><br><p style="margin:5px 0; text-align:center;"><em>Assinatura do Conferente / Motorista:</em></p><p style="text-align:center;">__________________________________________________</p>`;
+            html += `</div>`;
+
+            document.getElementById('receipt-print').style.width = '100%';
+            document.getElementById('receipt-print').innerHTML = html;
+            window.print();
+            setTimeout(() => { document.getElementById('receipt-print').innerHTML = ''; document.getElementById('receipt-print').style.width = '76mm'; }, 500);
+        }
+
         function switchAcertoTab(tab) { document.getElementById('btn-tab-pendentes').classList.remove('active-tab'); document.getElementById('btn-tab-historico').classList.remove('active-tab'); document.getElementById('view-pendentes').style.display = 'none'; document.getElementById('view-historico').style.display = 'none'; if(tab === 'pendentes') { document.getElementById('btn-tab-pendentes').classList.add('active-tab'); document.getElementById('view-pendentes').style.display = 'flex'; renderAcerto(); } else { document.getElementById('btn-tab-historico').classList.add('active-tab'); document.getElementById('view-historico').style.display = 'flex'; const hoje = new Date().toISOString().split('T')[0]; if(!document.getElementById('f-hist-inicio').value) { document.getElementById('f-hist-inicio').value = hoje; document.getElementById('f-hist-fim').value = hoje; } renderHistorico(); } }
         function setFiltroAcerto(filtro) { filtroAcertoAtual = filtro; ['Todos', 'A Vencer', 'Vencidos', 'Pagas'].forEach(f => document.getElementById(`f-acerto-${f}`).classList.remove('active')); document.getElementById(`f-acerto-${filtro}`).classList.add('active'); renderAcerto(); }
         function renderAcerto() { const tbody = document.getElementById('acerto-table-body'); const hoje = new Date().toISOString().split('T')[0]; const busca = (document.getElementById('f-acerto-busca')?.value || '').toLowerCase(); const inicio = document.getElementById('f-acerto-inicio')?.value; const fim = document.getElementById('f-acerto-fim')?.value; document.getElementById('check-all-acerto').checked = false; let contas = db.vendas.filter(v => v.vencimento !== null && v.status === 'Ativa'); contas = contas.filter(v => { const isPago = v.pagamento.startsWith('Acertado'); const isVencido = !isPago && v.vencimento < hoje; const isAVencer = !isPago && v.vencimento >= hoje; if (filtroAcertoAtual === 'Pagas' && !isPago) return false; if (filtroAcertoAtual === 'Vencidos' && !isVencido) return false; if (filtroAcertoAtual === 'A Vencer' && !isAVencer) return false; if (busca && !v.cliente.toLowerCase().includes(busca)) return false; if (inicio && v.vencimento < inicio) return false; if (fim && v.vencimento > fim) return false; return true; }); contas.sort((a, b) => new Date(a.vencimento) - new Date(b.vencimento)); if(contas.length === 0) { tbody.innerHTML = `<tr><td colspan="7" style="text-align:center; padding: 2rem; color: #666;">Nenhuma conta encontrada.</td></tr>`; return; } tbody.innerHTML = contas.map(v => { const isPago = v.pagamento.startsWith('Acertado'); const isVencido = !isPago && v.vencimento < hoje; let rowStyle = isPago ? 'background: #f0fdf4; opacity: 0.8;' : (isVencido ? 'background: #fef2f2;' : ''); let statusBadge = isPago ? '<span class="badge badge-success">PAGO</span>' : (isVencido ? '<span class="badge badge-danger">VENCIDO</span>' : '<span class="badge badge-warning">A VENCER</span>'); let pgtoText = isPago ? `<span style="color: #059669; font-weight: bold;">✔ ${v.pagamento.replace('Acertado (','').replace(')','')}</span>` : '-'; let valorRestante = v.total - (v.valorPago || 0); let faltaTxt = (!isPago && (v.valorPago || 0) > 0) ? `<br><span style="font-size:0.8rem; color:var(--danger)">Falta R$ ${formatCurrency(valorRestante)}</span>` : ''; return `<tr style="${rowStyle}"><td style="text-align: center;"><input type="checkbox" class="check-acerto" value="${v.id}" onchange="highlightRow(this)"></td><td><b>#${formatId(v.id)}</b></td><td>${v.cliente}</td><td style="${isVencido ? 'color: red; font-weight: bold;' : ''}">${v.vencimento.split('-').reverse().join('/')}</td><td><b>R$ ${formatCurrency(v.total)}</b>${faltaTxt}</td><td>${statusBadge}</td><td>${pgtoText}</td></tr>`; }).join(''); }
