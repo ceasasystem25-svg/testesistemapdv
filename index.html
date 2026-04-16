@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Sistema de Vendas Pro v10.11 - Cupom Térmico Centralizado</title>
+    <title>Sistema de Vendas Pro v10.12 - Cupom com Nome em Destaque</title>
     <style>
         :root { --primary: #2563eb; --success: #10b981; --danger: #ef4444; --warning: #f59e0b; --bg: #f3f4f6; --text: #1f2937; --info: #0ea5e9; }
         
@@ -93,7 +93,7 @@
                 background: transparent; 
                 font-family: 'Courier New', Courier, monospace; 
                 font-size: 14px !important; 
-                font-weight: 900 !important; /* Retornado o SUPER NEGRITO */
+                font-weight: 900 !important; /* SUPER NEGRITO para ficar legível */
                 line-height: 1.2;
                 text-transform: uppercase;
             }
@@ -106,8 +106,8 @@
 
     <header class="no-print">
         <div class="logo-container">
-            <img src="https://postimg.cc/8sNwz9hP" id="main-logo-img" alt="Logo da Empresa">
-            <h2 style="margin:0">LA SISTEMAS-PDV VAREJÃO</h2>
+            <img src="https://dummyimage.com/150x50/fff/000.png&text=LOGO+AQUI" id="main-logo-img" alt="Logo da Empresa">
+            <h2 style="margin:0">VendaFlow Pro</h2>
         </div>
         <nav>
             <button id="nav-home" onclick="navigate('home')">Início/Vendas</button>
@@ -429,7 +429,7 @@
     <div id="receipt-print"></div>
 
     <script>
-        const LOGO_URL = "https://i.postimg.cc/WpJyXPzr/Sem-titulo-1.png";
+        const LOGO_URL = "https://i.postimg.cc/Wzv0Gy5p/la-sistemas-1.png";
         document.getElementById('main-logo-img').src = LOGO_URL;
 
         const formatCurrency = (value) => { return parseFloat(value || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }); };
@@ -462,7 +462,6 @@
         function autoFillVendedor() { formatInputVal('v-vendedor', db.vendedores); } function autoFillProduct() { const p = formatInputVal('v-prod-input', db.produtos); if(p) { document.getElementById('v-unit').value = p.preco; } }
         function autoFillCliente() { const c = formatInputVal('v-cliente', db.clientes); const divCredito = document.getElementById('div-alerta-credito'); if(c && (c.credito || 0) > 0) { document.getElementById('v-saldo-cliente').innerText = formatCurrency(c.credito); divCredito.style.display = 'flex'; } else { divCredito.style.display = 'none'; } atualizarTotalTela(); }
 
-        // --- CLIENTES COM NOVO ENDEREÇO SEPARADO ---
         function saveClient(e) { 
             e.preventDefault(); const idEdit = document.getElementById('c-id-edit').value; const cCodigo = parseInt(document.getElementById('c-codigo').value); const cNome = document.getElementById('c-nome').value; const cPrazo = parseInt(document.getElementById('c-prazo').value) || 0; 
             const cTelefone = document.getElementById('c-telefone').value; const cCpf = document.getElementById('c-cpf').value; const cCnpj = document.getElementById('c-cnpj').value;
@@ -514,7 +513,6 @@
         function editarSelecionado() { const checks = document.querySelectorAll('.check-venda:checked'); if(checks.length !== 1) return alert("Selecione exatamente UMA venda na caixa de seleção para editar."); const idVenda = parseInt(checks[0].value); const v = db.vendas.find(v => v.id === idVenda); if(v && v.status === 'Ativa') { editSale(idVenda); } else { alert("Vendas canceladas não podem ser editadas."); } }
         function cancelarSelecionados() { const checks = document.querySelectorAll('.check-venda:checked'); if(checks.length === 0) return alert("Selecione pelo menos uma venda para cancelar."); if(confirm(`Tem certeza que deseja cancelar as ${checks.length} venda(s) selecionada(s)?`)) { checks.forEach(cb => { const id = parseInt(cb.value); const venda = db.vendas.find(v => v.id === id); if(venda) venda.status = 'Cancelada'; }); saveDB(); renderSales(); } }
         
-        // --- IMPRESSÃO CUPOM VOLTOU PARA A 10.9 ---
         function imprimirSelecionados(tipo) { const checks = document.querySelectorAll('.check-venda:checked'); if(checks.length === 0) return alert("Selecione pelo menos uma venda para imprimir o cupom."); const ids = Array.from(checks).map(cb => parseInt(cb.value)); const vendasParaImprimir = db.vendas.filter(v => ids.includes(v.id)); printReceiptMultiple(vendasParaImprimir, tipo); }
 
         function printReceiptMultiple(vendas, tipo = 'cliente') {
@@ -524,7 +522,6 @@
             vendas.forEach((v, index) => {
                 const dataEmissao = v.dataPedido ? v.dataPedido.split('-').reverse().join('/') : v.data.split('T')[0].split('-').reverse().join('/');
                 
-                // Lógica Inteligente do Endereço (da 10.10 mantida)
                 const cli = db.clientes.find(c => c.id == v.clienteId) || {};
                 let endCli = "";
                 if (v.clienteRua) {
@@ -536,7 +533,6 @@
                 }
                 const telCli = v.clienteTel || cli.telefone || '';
 
-                // ESTRUTURA VISUAL DA 10.9 (BEM FORTE E NEGRITA)
                 let html = `<div style="text-align:center;">`;
                 html += `<img src="${LOGO_URL}" style="max-height: 70px; margin-bottom: 5px;"><br>`;
                 html += `LA SISTEMAS E VAREJÃO<br>`;
@@ -553,9 +549,10 @@
                 html += `Vendedor: ${v.vendedor ? v.vendedor.toUpperCase() : '-'}<br>`;
                 html += `<br>`;
                 html += `Código do Cliente: ${v.clienteId || '-'}<br>`;
-                html += `<b>${v.cliente.toUpperCase()}</b><br>`;
                 
-                // Só imprime endereço e telefone se existirem!
+                // NOVO TAMANHO DA FONTE DO CLIENTE (18px)
+                html += `<b style="font-size: 18px;">${v.cliente.toUpperCase()}</b><br>`;
+                
                 if (endCli) html += `${endCli.toUpperCase()}<br>`;
                 if (telCli) html += `Telefone: ${telCli}<br>`;
                 html += `</div>`;
@@ -636,11 +633,9 @@
             });
             document.getElementById('receipt-print').innerHTML = allHtml; 
             window.print();
-            // Volta para vazio para não interferir na tela
             setTimeout(() => { document.getElementById('receipt-print').innerHTML = ''; }, 500);
         }
 
-        // --- SISTEMA DE ACERTO DE CONTAS (MANTIDO) ---
         function abrirModalImpressaoAgrupada() { const checks = document.querySelectorAll('.check-venda:checked'); if (checks.length === 0) return alert("Selecione."); const idsSelecionados = Array.from(checks).map(cb => parseInt(cb.value)); const vendasParaImprimir = db.vendas.filter(v => idsSelecionados.includes(v.id)); document.getElementById('preview-relatorio-agrupado').innerHTML = gerarHTMLRelatorioAgrupado(vendasParaImprimir); document.getElementById('modal-impressao-agrupada').style.display = 'flex'; }
         function fecharModalImpressaoAgrupada() { document.getElementById('modal-impressao-agrupada').style.display = 'none'; }
         function confirmarImpressaoAgrupada() { document.getElementById('receipt-print').style.width = '100%'; document.getElementById('receipt-print').innerHTML = document.getElementById('preview-relatorio-agrupado').innerHTML; window.print(); setTimeout(() => { document.getElementById('receipt-print').innerHTML = ''; }, 500); }
