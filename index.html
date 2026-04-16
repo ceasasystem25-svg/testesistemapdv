@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Sistema de Vendas Pro v10.12 - Cupom com Nome em Destaque</title>
+    <title>Sistema de Vendas Pro v10.13 - Relatórios A4 Personalizados</title>
     <style>
         :root { --primary: #2563eb; --success: #10b981; --danger: #ef4444; --warning: #f59e0b; --bg: #f3f4f6; --text: #1f2937; --info: #0ea5e9; }
         
@@ -85,15 +85,15 @@
             #receipt-print { 
                 display: block !important; 
                 position: relative !important;
-                width: 76mm; /* Ajustado para caber na área real de impressão e não cortar a direita */
-                margin: 0 auto; /* Centraliza o cupom no papel */
-                padding: 0 2mm; /* Respiro lateral interno */
-                box-sizing: border-box; /* Garante que o padding não estoure a largura */
+                width: 76mm; 
+                margin: 0 auto; 
+                padding: 0 2mm; 
+                box-sizing: border-box; 
                 color: #000 !important;
                 background: transparent; 
                 font-family: 'Courier New', Courier, monospace; 
                 font-size: 14px !important; 
-                font-weight: 900 !important; /* SUPER NEGRITO para ficar legível */
+                font-weight: 900 !important; 
                 line-height: 1.2;
                 text-transform: uppercase;
             }
@@ -429,7 +429,7 @@
     <div id="receipt-print"></div>
 
     <script>
-        const LOGO_URL = "https://i.postimg.cc/d009SgRC/la-sistemas-1.png";
+        const LOGO_URL = "https://dummyimage.com/200x80/fff/000.png&text=SUA+LOGO";
         document.getElementById('main-logo-img').src = LOGO_URL;
 
         const formatCurrency = (value) => { return parseFloat(value || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }); };
@@ -550,7 +550,6 @@
                 html += `<br>`;
                 html += `Código do Cliente: ${v.clienteId || '-'}<br>`;
                 
-                // NOVO TAMANHO DA FONTE DO CLIENTE (18px)
                 html += `<b style="font-size: 18px;">${v.cliente.toUpperCase()}</b><br>`;
                 
                 if (endCli) html += `${endCli.toUpperCase()}<br>`;
@@ -636,16 +635,107 @@
             setTimeout(() => { document.getElementById('receipt-print').innerHTML = ''; }, 500);
         }
 
-        function abrirModalImpressaoAgrupada() { const checks = document.querySelectorAll('.check-venda:checked'); if (checks.length === 0) return alert("Selecione."); const idsSelecionados = Array.from(checks).map(cb => parseInt(cb.value)); const vendasParaImprimir = db.vendas.filter(v => idsSelecionados.includes(v.id)); document.getElementById('preview-relatorio-agrupado').innerHTML = gerarHTMLRelatorioAgrupado(vendasParaImprimir); document.getElementById('modal-impressao-agrupada').style.display = 'flex'; }
+        // --- RELATÓRIOS A4 PERSONALIZADOS ---
+        function abrirModalImpressaoAgrupada() { 
+            const checks = document.querySelectorAll('.check-venda:checked'); 
+            if (checks.length === 0) return alert("Selecione."); 
+            const idsSelecionados = Array.from(checks).map(cb => parseInt(cb.value)); 
+            const vendasParaImprimir = db.vendas.filter(v => idsSelecionados.includes(v.id)); 
+            document.getElementById('preview-relatorio-agrupado').innerHTML = gerarHTMLRelatorioAgrupado(vendasParaImprimir); 
+            document.getElementById('modal-impressao-agrupada').style.display = 'flex'; 
+        }
         function fecharModalImpressaoAgrupada() { document.getElementById('modal-impressao-agrupada').style.display = 'none'; }
-        function confirmarImpressaoAgrupada() { document.getElementById('receipt-print').style.width = '100%'; document.getElementById('receipt-print').innerHTML = document.getElementById('preview-relatorio-agrupado').innerHTML; window.print(); setTimeout(() => { document.getElementById('receipt-print').innerHTML = ''; }, 500); }
-        function gerarHTMLRelatorioAgrupado(vendas) { let html = '<div style="padding: 20px; background: white; font-family: Arial, sans-serif;"><h2 style="text-align:center; margin-bottom: 20px;">Relatório de Vendas (Lote)</h2><table style="width:100%; border-collapse: collapse; font-size: 13px;"><tbody>'; let totalGeral = 0; vendas.forEach(v => { totalGeral += v.total; const dPed = v.dataPedido ? v.dataPedido.split('-').reverse().join('/') : v.data.split('T')[0].split('-').reverse().join('/'); html += `<tr style="border-top: 2px solid #000; background: #f8fafc;"><td colspan="2" style="padding: 8px;"><b>Ped: #${formatId(v.id)} &nbsp;|&nbsp; Vend: ${v.vendedor || '-'} &nbsp;|&nbsp; Data: ${dPed}</b></td><td colspan="2" style="padding: 8px;"><b>Cliente: ${(v.clienteId || '0')} - ${v.cliente.toUpperCase()}</b></td><td style="text-align: right; padding: 8px;"><b>R$ ${formatCurrency(v.total)}</b></td></tr><tr style="border-bottom: 1px solid #cbd5e1; font-weight: bold; background: #f1f5f9;"><td style="width: 5%; text-align:center; padding: 6px;">Item</td><td style="width: 45%; padding: 6px;">Produto</td><td style="width: 15%; text-align:right; padding: 6px;">Qtd</td><td style="width: 15%; text-align:right; padding: 6px;">V. Unit.</td><td style="width: 20%; text-align:right; padding: 6px;">Total Item</td></tr>`; if (v.carrinho && v.carrinho.length > 0) { v.carrinho.forEach((item, idx) => { html += `<tr><td style="text-align:center; padding: 4px;">${idx + 1}</td><td style="padding: 4px;">${item.prodId || '-'} - ${item.nome.toUpperCase()}</td><td style="text-align:right; padding: 4px;">${item.qtd} ${item.unidade || 'UN'}</td><td style="text-align:right; padding: 4px;">R$ ${formatCurrency(item.unit)}</td><td style="text-align:right; padding: 4px;">R$ ${formatCurrency(item.totalItem)}</td></tr>`; }); } else { html += `<tr><td style="text-align:center; padding: 4px;">1</td><td colspan="4" style="padding: 4px;">${v.itens}</td></tr>`; } html += `<tr><td colspan="5" style="padding-bottom: 15px;"></td></tr>`; }); html += `<tr style="border-top: 2px solid #000; font-weight: bold; font-size: 15px;"><td colspan="3" style="padding: 10px;"></td><td style="text-align: right; padding: 10px;">TOTAL (${vendas.length} vendas):</td><td style="text-align: right; padding: 10px; color: #b91c1c;">R$ ${formatCurrency(totalGeral)}</td></tr></tbody></table></div>`; return html; }
+        
+        function confirmarImpressaoAgrupada() { 
+            document.getElementById('receipt-print').style.width = '100%'; 
+            document.getElementById('receipt-print').innerHTML = document.getElementById('preview-relatorio-agrupado').innerHTML; 
+            window.print(); 
+            setTimeout(() => { document.getElementById('receipt-print').innerHTML = ''; document.getElementById('receipt-print').style.width = '76mm'; }, 500); 
+        }
+
+        function gerarHTMLRelatorioAgrupado(vendas) { 
+            let html = '<div style="padding: 20px; background: white; font-family: Arial, sans-serif;">';
+            html += `<div style="display: flex; align-items: center; justify-content: space-between; border-bottom: 2px solid #000; padding-bottom: 15px; margin-bottom: 20px;">
+                        <div style="display: flex; align-items: center; gap: 15px;">
+                            <img src="${LOGO_URL}" style="max-height: 80px;">
+                            <div>
+                                <h3 style="margin: 0; font-size: 18px;">LA SISTEMAS E VAREJÃO</h3>
+                                <p style="margin: 3px 0; font-size: 13px; color: #444;">Av. Luiz Magioni, 4005<br>Ribeirão Preto-SP / CEP 14072-055<br>Telefone: (12) 99709-3704</p>
+                            </div>
+                        </div>
+                        <div style="text-align: right;">
+                            <h2 style="margin: 0; color: #1e293b;">Relatório de Vendas (Lote)</h2>
+                            <p style="margin: 5px 0 0 0; color: #64748b; font-size: 12px;">Emissão: ${new Date().toLocaleDateString('pt-BR')} ${new Date().toLocaleTimeString('pt-BR', {hour: '2-digit', minute:'2-digit'})}</p>
+                        </div>
+                    </div>`;
+
+            html += '<table style="width:100%; border-collapse: collapse; font-size: 13px;"><tbody>'; 
+            let totalGeral = 0; 
+            vendas.forEach(v => { 
+                totalGeral += v.total; 
+                const dPed = v.dataPedido ? v.dataPedido.split('-').reverse().join('/') : v.data.split('T')[0].split('-').reverse().join('/'); 
+                html += `<tr style="border-top: 2px solid #000; background: #f8fafc;"><td colspan="2" style="padding: 8px;"><b>Ped: #${formatId(v.id)} &nbsp;|&nbsp; Vend: ${v.vendedor || '-'} &nbsp;|&nbsp; Data: ${dPed}</b></td><td colspan="2" style="padding: 8px;"><b>Cliente: ${(v.clienteId || '0')} - ${v.cliente.toUpperCase()}</b></td><td style="text-align: right; padding: 8px;"><b>R$ ${formatCurrency(v.total)}</b></td></tr><tr style="border-bottom: 1px solid #cbd5e1; font-weight: bold; background: #f1f5f9;"><td style="width: 5%; text-align:center; padding: 6px;">Item</td><td style="width: 45%; padding: 6px;">Produto</td><td style="width: 15%; text-align:right; padding: 6px;">Qtd</td><td style="width: 15%; text-align:right; padding: 6px;">V. Unit.</td><td style="width: 20%; text-align:right; padding: 6px;">Total Item</td></tr>`; 
+                if (v.carrinho && v.carrinho.length > 0) { 
+                    v.carrinho.forEach((item, idx) => { html += `<tr><td style="text-align:center; padding: 4px;">${idx + 1}</td><td style="padding: 4px;">${item.prodId || '-'} - ${item.nome.toUpperCase()}</td><td style="text-align:right; padding: 4px;">${item.qtd} ${item.unidade || 'UN'}</td><td style="text-align:right; padding: 4px;">R$ ${formatCurrency(item.unit)}</td><td style="text-align:right; padding: 4px;">R$ ${formatCurrency(item.totalItem)}</td></tr>`; }); 
+                } else { 
+                    html += `<tr><td style="text-align:center; padding: 4px;">1</td><td colspan="4" style="padding: 4px;">${v.itens}</td></tr>`; 
+                } 
+                html += `<tr><td colspan="5" style="padding-bottom: 15px;"></td></tr>`; 
+            }); 
+            html += `<tr style="border-top: 2px solid #000; font-weight: bold; font-size: 15px;"><td colspan="3" style="padding: 10px;"></td><td style="text-align: right; padding: 10px;">TOTAL (${vendas.length} vendas):</td><td style="text-align: right; padding: 10px; color: #b91c1c;">R$ ${formatCurrency(totalGeral)}</td></tr></tbody></table></div>`; 
+            return html; 
+        }
         
         function switchAcertoTab(tab) { document.getElementById('btn-tab-pendentes').classList.remove('active-tab'); document.getElementById('btn-tab-historico').classList.remove('active-tab'); document.getElementById('view-pendentes').style.display = 'none'; document.getElementById('view-historico').style.display = 'none'; if(tab === 'pendentes') { document.getElementById('btn-tab-pendentes').classList.add('active-tab'); document.getElementById('view-pendentes').style.display = 'flex'; renderAcerto(); } else { document.getElementById('btn-tab-historico').classList.add('active-tab'); document.getElementById('view-historico').style.display = 'flex'; const hoje = new Date().toISOString().split('T')[0]; if(!document.getElementById('f-hist-inicio').value) { document.getElementById('f-hist-inicio').value = hoje; document.getElementById('f-hist-fim').value = hoje; } renderHistorico(); } }
         function setFiltroAcerto(filtro) { filtroAcertoAtual = filtro; ['Todos', 'A Vencer', 'Vencidos', 'Pagas'].forEach(f => document.getElementById(`f-acerto-${f}`).classList.remove('active')); document.getElementById(`f-acerto-${filtro}`).classList.add('active'); renderAcerto(); }
         function renderAcerto() { const tbody = document.getElementById('acerto-table-body'); const hoje = new Date().toISOString().split('T')[0]; const busca = (document.getElementById('f-acerto-busca')?.value || '').toLowerCase(); const inicio = document.getElementById('f-acerto-inicio')?.value; const fim = document.getElementById('f-acerto-fim')?.value; document.getElementById('check-all-acerto').checked = false; let contas = db.vendas.filter(v => v.vencimento !== null && v.status === 'Ativa'); contas = contas.filter(v => { const isPago = v.pagamento.startsWith('Acertado'); const isVencido = !isPago && v.vencimento < hoje; const isAVencer = !isPago && v.vencimento >= hoje; if (filtroAcertoAtual === 'Pagas' && !isPago) return false; if (filtroAcertoAtual === 'Vencidos' && !isVencido) return false; if (filtroAcertoAtual === 'A Vencer' && !isAVencer) return false; if (busca && !v.cliente.toLowerCase().includes(busca)) return false; if (inicio && v.vencimento < inicio) return false; if (fim && v.vencimento > fim) return false; return true; }); contas.sort((a, b) => new Date(a.vencimento) - new Date(b.vencimento)); if(contas.length === 0) { tbody.innerHTML = `<tr><td colspan="7" style="text-align:center; padding: 2rem; color: #666;">Nenhuma conta encontrada.</td></tr>`; return; } tbody.innerHTML = contas.map(v => { const isPago = v.pagamento.startsWith('Acertado'); const isVencido = !isPago && v.vencimento < hoje; let rowStyle = isPago ? 'background: #f0fdf4; opacity: 0.8;' : (isVencido ? 'background: #fef2f2;' : ''); let statusBadge = isPago ? '<span class="badge badge-success">PAGO</span>' : (isVencido ? '<span class="badge badge-danger">VENCIDO</span>' : '<span class="badge badge-warning">A VENCER</span>'); let pgtoText = isPago ? `<span style="color: #059669; font-weight: bold;">✔ ${v.pagamento.replace('Acertado (','').replace(')','')}</span>` : '-'; let valorRestante = v.total - (v.valorPago || 0); let faltaTxt = (!isPago && (v.valorPago || 0) > 0) ? `<br><span style="font-size:0.8rem; color:var(--danger)">Falta R$ ${formatCurrency(valorRestante)}</span>` : ''; return `<tr style="${rowStyle}"><td style="text-align: center;"><input type="checkbox" class="check-acerto" value="${v.id}" onchange="highlightRow(this)"></td><td><b>#${formatId(v.id)}</b></td><td>${v.cliente}</td><td style="${isVencido ? 'color: red; font-weight: bold;' : ''}">${v.vencimento.split('-').reverse().join('/')}</td><td><b>R$ ${formatCurrency(v.total)}</b>${faltaTxt}</td><td>${statusBadge}</td><td>${pgtoText}</td></tr>`; }).join(''); }
         function renderHistorico() { const tbody = document.getElementById('historico-table-body'); const busca = (document.getElementById('f-hist-busca')?.value || '').toLowerCase(); const inicio = document.getElementById('f-hist-inicio')?.value; const fim = document.getElementById('f-hist-fim')?.value; let contasComPagamento = db.vendas.filter(v => (v.historicoPgto && v.historicoPgto.length > 0) || v.pagamento.startsWith('Acertado')); let linhas = []; contasComPagamento.forEach(v => { if(v.historicoPgto && v.historicoPgto.length > 0) { v.historicoPgto.forEach(pgto => { const dataPgto = pgto.data.split('T')[0]; if((!busca || v.cliente.toLowerCase().includes(busca)) && (!inicio || dataPgto >= inicio) && (!fim || dataPgto <= fim)) { linhas.push({ dataIso: pgto.data, vendaId: v.id, cliente: v.cliente, metodo: pgto.metodo, valor: pgto.valor }); } }); } else if(v.dataBaixa) { const dataPgto = v.dataBaixa.split('T')[0]; if((!busca || v.cliente.toLowerCase().includes(busca)) && (!inicio || dataPgto >= inicio) && (!fim || dataPgto <= fim)) { linhas.push({ dataIso: v.dataBaixa, vendaId: v.id, cliente: v.cliente, metodo: v.pagamento.replace('Acertado (','').replace(')',''), valor: v.total }); } } }); linhas.sort((a, b) => new Date(b.dataIso) - new Date(a.dataIso)); if(linhas.length === 0) { tbody.innerHTML = `<tr><td colspan="6" style="text-align:center; padding: 2rem; color: #666;">Nenhum registro de pagamento encontrado.</td></tr>`; return; } tbody.innerHTML = linhas.map(l => { const dateObj = new Date(l.dataIso); const dataFormatada = dateObj.toLocaleDateString('pt-BR'); const horaFormatada = dateObj.toLocaleTimeString('pt-BR', {hour: '2-digit', minute:'2-digit'}); return `<tr><td><b>${dataFormatada}</b> <span style="color:#888; font-size:0.8rem">${horaFormatada}</span></td><td><b>#${formatId(l.vendaId)}</b></td><td>${l.cliente}</td><td><span style="color: #059669; font-weight: bold;">${l.metodo}</span></td><td><b>R$ ${formatCurrency(l.valor)}</b></td><td><button class="btn btn-ghost" onclick="cancelarBaixaIndividual(${l.vendaId})" style="padding:4px 8px; font-size:0.85rem; color: var(--danger); border-color: var(--danger);">❌ Desfazer</button></td></tr>`; }).join(''); }
-        function imprimirRelatorioAcerto() { let contas = []; const checks = document.querySelectorAll('.check-acerto:checked'); if (checks.length > 0) { const ids = Array.from(checks).map(cb => parseInt(cb.value)); contas = db.vendas.filter(v => ids.includes(v.id)); } else { const rows = document.querySelectorAll('#acerto-table-body tr'); if(rows.length === 0 || rows[0].innerText.includes('Nenhuma conta')) return alert("Não há contas filtradas para imprimir."); rows.forEach(row => { const cb = row.querySelector('.check-acerto'); if(cb) { const v = db.vendas.find(v => v.id === parseInt(cb.value)); if(v) contas.push(v); } }); } if(contas.length === 0) return alert("Erro ao carregar contas."); let html = '<div style="padding: 20px; background: white; font-family: Arial, sans-serif;"><h2 style="text-align:center; border-bottom: 2px solid #000; padding-bottom: 10px;">Relatório de Acerto de Contas</h2>'; html += `<p style="text-align:right; color:#666;">Data de Emissão: ${new Date().toLocaleDateString('pt-BR')} | Total de Contas: ${contas.length}</p><table style="width: 100%; border-collapse: collapse; margin-top: 20px; font-size: 14px;"><thead><tr style="background: #f1f5f9; text-align: left; border-bottom: 2px solid #cbd5e1;"><th style="padding: 10px;">Venda Nº</th><th style="padding: 10px;">Cliente</th><th style="padding: 10px;">Vencimento</th><th style="padding: 10px;">Status</th><th style="padding: 10px; text-align: right;">Total da Venda</th><th style="padding: 10px; text-align: right;">Falta Receber</th></tr></thead><tbody>`; let totalDivida = 0; let totalFalta = 0; const hoje = new Date().toISOString().split('T')[0]; contas.forEach(v => { const isPago = v.pagamento.startsWith('Acertado'); const isVencido = !isPago && v.vencimento < hoje; let statusTxt = isPago ? 'PAGO' : (isVencido ? 'VENCIDO' : 'A VENCER'); let restante = v.total - (v.valorPago || 0); totalDivida += v.total; totalFalta += restante; html += `<tr style="border-bottom: 1px solid #e2e8f0;"><td style="padding: 10px;"><b>#${formatId(v.id)}</b></td><td style="padding: 10px;">${v.cliente}</td><td style="padding: 10px; color: ${isVencido ? 'red' : 'black'};">${v.vencimento.split('-').reverse().join('/')}</td><td style="padding: 10px;">${statusTxt}</td><td style="padding: 10px; text-align: right;">R$ ${formatCurrency(v.total)}</td><td style="padding: 10px; text-align: right; color: ${restante > 0 ? '#b91c1c' : '#15803d'}; font-weight: bold;">R$ ${formatCurrency(restante)}</td></tr>`; }); html += `</tbody><tfoot style="background: #f8fafc; font-weight: bold;"><tr style="border-top: 2px solid #000;"><td colspan="4" style="padding: 15px; text-align: right;">TOTAIS:</td><td style="padding: 15px; text-align: right;">R$ ${formatCurrency(totalDivida)}</td><td style="padding: 15px; text-align: right; color: #b91c1c; font-size: 16px;">R$ ${formatCurrency(totalFalta)}</td></tr></tfoot></table></div>`; document.getElementById('receipt-print').style.width = '100%'; document.getElementById('receipt-print').innerHTML = html; window.print(); setTimeout(() => { document.getElementById('receipt-print').innerHTML = ''; }, 500); }
+        
+        function imprimirRelatorioAcerto() { 
+            let contas = []; const checks = document.querySelectorAll('.check-acerto:checked'); 
+            if (checks.length > 0) { 
+                const ids = Array.from(checks).map(cb => parseInt(cb.value)); contas = db.vendas.filter(v => ids.includes(v.id)); 
+            } else { 
+                const rows = document.querySelectorAll('#acerto-table-body tr'); 
+                if(rows.length === 0 || rows[0].innerText.includes('Nenhuma conta')) return alert("Não há contas filtradas para imprimir."); 
+                rows.forEach(row => { const cb = row.querySelector('.check-acerto'); if(cb) { const v = db.vendas.find(v => v.id === parseInt(cb.value)); if(v) contas.push(v); } }); 
+            } 
+            if(contas.length === 0) return alert("Erro ao carregar contas."); 
+
+            let html = '<div style="padding: 20px; background: white; font-family: Arial, sans-serif;">';
+            html += `<div style="display: flex; align-items: center; justify-content: space-between; border-bottom: 2px solid #000; padding-bottom: 15px; margin-bottom: 20px;">
+                        <div style="display: flex; align-items: center; gap: 15px;">
+                            <img src="${LOGO_URL}" style="max-height: 80px;">
+                            <div>
+                                <h3 style="margin: 0; font-size: 18px;">LA SISTEMAS E VAREJÃO</h3>
+                                <p style="margin: 3px 0; font-size: 13px; color: #444;">Av. Luiz Magioni, 4005<br>Ribeirão Preto-SP / CEP 14072-055<br>Telefone: (12) 99709-3704</p>
+                            </div>
+                        </div>
+                        <div style="text-align: right;">
+                            <h2 style="margin: 0; color: #1e293b;">Relatório de Acerto de Contas</h2>
+                            <p style="margin: 5px 0 0 0; color: #64748b; font-size: 12px;">Emissão: ${new Date().toLocaleDateString('pt-BR')} ${new Date().toLocaleTimeString('pt-BR', {hour: '2-digit', minute:'2-digit'})}</p>
+                            <p style="margin: 5px 0 0 0; color: #64748b; font-size: 12px;">Total de Contas: ${contas.length}</p>
+                        </div>
+                    </div>`;
+
+            html += '<table style="width: 100%; border-collapse: collapse; margin-top: 20px; font-size: 14px;"><thead><tr style="background: #f1f5f9; text-align: left; border-bottom: 2px solid #cbd5e1;"><th style="padding: 10px;">Venda Nº</th><th style="padding: 10px;">Cliente</th><th style="padding: 10px;">Vencimento</th><th style="padding: 10px;">Status</th><th style="padding: 10px; text-align: right;">Total da Venda</th><th style="padding: 10px; text-align: right;">Falta Receber</th></tr></thead><tbody>'; 
+            let totalDivida = 0; let totalFalta = 0; const hoje = new Date().toISOString().split('T')[0]; 
+            contas.forEach(v => { 
+                const isPago = v.pagamento.startsWith('Acertado'); 
+                const isVencido = !isPago && v.vencimento < hoje; 
+                let statusTxt = isPago ? 'PAGO' : (isVencido ? 'VENCIDO' : 'A VENCER'); 
+                let restante = v.total - (v.valorPago || 0); 
+                totalDivida += v.total; totalFalta += restante; 
+                html += `<tr style="border-bottom: 1px solid #e2e8f0;"><td style="padding: 10px;"><b>#${formatId(v.id)}</b></td><td style="padding: 10px;">${v.cliente}</td><td style="padding: 10px; color: ${isVencido ? 'red' : 'black'};">${v.vencimento.split('-').reverse().join('/')}</td><td style="padding: 10px;">${statusTxt}</td><td style="padding: 10px; text-align: right;">R$ ${formatCurrency(v.total)}</td><td style="padding: 10px; text-align: right; color: ${restante > 0 ? '#b91c1c' : '#15803d'}; font-weight: bold;">R$ ${formatCurrency(restante)}</td></tr>`; 
+            }); 
+            html += `</tbody><tfoot style="background: #f8fafc; font-weight: bold;"><tr style="border-top: 2px solid #000;"><td colspan="4" style="padding: 15px; text-align: right;">TOTAIS:</td><td style="padding: 15px; text-align: right;">R$ ${formatCurrency(totalDivida)}</td><td style="padding: 15px; text-align: right; color: #b91c1c; font-size: 16px;">R$ ${formatCurrency(totalFalta)}</td></tr></tfoot></table></div>`; 
+            
+            document.getElementById('receipt-print').style.width = '100%'; 
+            document.getElementById('receipt-print').innerHTML = html; 
+            window.print(); 
+            setTimeout(() => { document.getElementById('receipt-print').innerHTML = ''; document.getElementById('receipt-print').style.width = '76mm'; }, 500); 
+        }
+
         function abrirModalBaixa() { const checks = document.querySelectorAll('.check-acerto:checked'); if(checks.length === 0) return alert("Selecione pelo menos uma conta pendente para dar baixa."); let listaHtml = '<ul style="list-style: none; padding: 0; margin: 0;">'; let totalFalta = 0; let jaPagas = 0; checks.forEach(cb => { const id = parseInt(cb.value); const v = db.vendas.find(v => v.id === id); if(v) { if(!v.pagamento.startsWith('Acertado')) { let restante = v.total - (v.valorPago || 0); totalFalta += restante; listaHtml += `<li style="padding: 8px 5px; border-bottom: 1px solid #e2e8f0; display: flex; justify-content: space-between; font-size: 0.9rem;"><span><b>#${formatId(v.id)}</b> - ${v.cliente}</span><b>R$ ${formatCurrency(restante)}</b></li>`; } else { jaPagas++; } } }); listaHtml += '</ul>'; if(totalFalta === 0 && jaPagas > 0) return alert("As contas selecionadas já estão pagas!"); document.getElementById('lista-baixa').innerHTML = listaHtml; document.getElementById('total-baixa-txt').innerText = `R$ ${formatCurrency(totalFalta)}`; if(checks.length === 1 && totalFalta > 0) { document.getElementById('div-baixa-parcial').style.display = 'block'; let str = totalFalta.toFixed(2).replace('.', ','); str = str.replace(/(\d)(?=(\d{3})+(?!\d))/g, '$1.'); document.getElementById('v-baixa-valor').value = str; } else { document.getElementById('div-baixa-parcial').style.display = 'none'; } document.getElementById('modal-baixa').style.display = 'flex'; }
         function fecharModalBaixa() { document.getElementById('modal-baixa').style.display = 'none'; }
         function confirmarBaixaLote() { const checks = document.querySelectorAll('.check-acerto:checked'); const metodo = document.getElementById('metodo-baixa-popup').value; const dataIsoAgora = new Date().toISOString(); let baixadas = 0; if(checks.length === 1) { const id = parseInt(checks[0].value); const v = db.vendas.find(v => v.id === id); let restante = v.total - (v.valorPago || 0); let rawInput = document.getElementById('v-baixa-valor').value; let valorInput = parseFloat(rawInput.replace(/\./g, '').replace(',', '.')) || 0; if(valorInput <= 0) return alert("O valor pago deve ser maior que zero."); let clienteUpdate = db.clientes.find(c => c.id == v.clienteId); if(valorInput > restante) { let troco = valorInput - restante; if(confirm(`O cliente pagou a mais!\nSobrou R$ ${formatCurrency(troco)}.\nDeseja transformar esse troco em CRÉDITO na loja para o cliente?`)) { clienteUpdate.credito = (clienteUpdate.credito || 0) + troco; alert(`Crédito adicionado!`); valorInput = restante; } else { valorInput = restante; } } v.valorPago = (v.valorPago || 0) + valorInput; if(!v.historicoPgto) v.historicoPgto = []; v.historicoPgto.push({ data: dataIsoAgora, valor: valorInput, metodo: metodo }); if(Math.abs(v.total - v.valorPago) < 0.01) { v.pagamento = `Acertado (${metodo})`; v.dataBaixa = dataIsoAgora; } baixadas++; } else { checks.forEach(cb => { const id = parseInt(cb.value); const v = db.vendas.find(v => v.id === id); if(v && !v.pagamento.startsWith('Acertado')) { let restante = v.total - (v.valorPago || 0); v.valorPago = v.total; if(!v.historicoPgto) v.historicoPgto = []; v.historicoPgto.push({ data: dataIsoAgora, valor: restante, metodo: metodo }); v.pagamento = `Acertado (${metodo})`; v.dataBaixa = dataIsoAgora; baixadas++; } }); } if(baixadas > 0) { saveDB(); fecharModalBaixa(); renderAcerto(); renderHistorico(); renderSales(); renderClients(); } }
