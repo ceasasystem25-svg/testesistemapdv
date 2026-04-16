@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Sistema de Vendas Pro v10.15 - Tipos de Saída e Logo Transparente</title>
+    <title>Sistema de Vendas Pro v10.17 - Novo Layout Via Carregador</title>
     <style>
         :root { --primary: #2563eb; --success: #10b981; --danger: #ef4444; --warning: #f59e0b; --bg: #f3f4f6; --text: #1f2937; --info: #0ea5e9; }
         
@@ -11,7 +11,6 @@
         
         header { background: var(--primary); color: white; padding: 1rem 2rem; display: flex; justify-content: space-between; align-items: center; z-index: 100; flex-wrap: wrap; gap: 10px; flex-shrink: 0; }
         .logo-container { display: flex; align-items: center; gap: 10px; }
-        /* ALTERAÇÃO: Fundo transparente e sem bordas brancas na logo do topo */
         .logo-container img { max-height: 40px; border-radius: 4px; background: transparent; }
         
         nav { display: flex; flex-wrap: wrap; gap: 5px; }
@@ -107,7 +106,7 @@
     <header class="no-print">
         <div class="logo-container">
             <img src="https://i.postimg.cc/cCj4sBRm/branco.png" id="main-logo-img" alt="Logo da Empresa">
-            <h2 style="margin:0">VendaFlow Pro</h2>
+            <h2 style="margin:0">LA SISTEMAS-PDV VAREJÃO</h2>
         </div>
         <nav>
             <button id="nav-home" onclick="navigate('home')">Início/Vendas</button>
@@ -620,15 +619,27 @@
                     html += `</table>`;
 
                 } else {
-                    html += `<tr><td colspan="2" style="text-align:left; padding-bottom: 5px; border-bottom: 1px dashed #000;">PRODUTOS PARA SEPARAÇÃO</td></tr>`;
+                    // --- ALTERAÇÃO: NOVO LAYOUT DE SEPARAÇÃO (CARREGADOR) ---
+                    html += `<tr><td colspan="4" style="text-align:center; padding-bottom: 5px;">PRODUTOS PARA SEPARAÇÃO</td></tr>`;
+                    html += `<tr style="border-top: 1px dashed #000; border-bottom: 1px dashed #000;">
+                                <td style="text-align:center; width: 15%; padding: 5px 0;">CONF</td>
+                                <td style="text-align:left; width: 55%; padding: 5px 0; padding-left: 5px;">PRODUTO</td>
+                                <td style="text-align:right; width: 15%; padding: 5px 0;">QTD</td>
+                                <td style="text-align:right; width: 15%; padding: 5px 0;">UND</td>
+                             </tr>`;
+                    
                     if(v.carrinho && v.carrinho.length > 0) { 
                         v.carrinho.forEach(item => {
                             let und = item.unidade || 'UN';
-                            html += `<tr><td colspan="2" style="padding-top: 10px;">[  ] ${item.nome.toUpperCase()}</td></tr>`;
-                            html += `<tr><td colspan="2" style="text-align:left; padding-left: 20px;">QTD: ${formatCurrency(item.qtd)} ${und}</td></tr>`;
+                            html += `<tr>
+                                        <td style="text-align:center; vertical-align:top; padding-top: 8px;">[ &nbsp;&nbsp; ]</td>
+                                        <td style="text-align:left; vertical-align:top; padding-top: 8px; padding-left: 5px;">${item.nome.toUpperCase()}</td>
+                                        <td style="text-align:right; vertical-align:top; padding-top: 8px;">${formatCurrency(item.qtd)}</td>
+                                        <td style="text-align:right; vertical-align:top; padding-top: 8px;">${und}</td>
+                                     </tr>`;
                         });
                     } else {
-                        html += `<tr><td colspan="2" style="padding-top: 10px;">${v.itens.toUpperCase()}</td></tr>`;
+                        html += `<tr><td colspan="4" style="padding-top: 10px; text-align:center;">${v.itens.toUpperCase()}</td></tr>`;
                     }
                     html += `</table>`;
                     html += `<br><br><br><p style="margin:5px 0; text-align:center;"><em>Assinatura do Conferente:</em></p><p style="text-align:center;">___________________________</p>`;
@@ -791,16 +802,23 @@
                         <div style="text-align: right;">
                             <h2 style="margin: 0; color: #1e293b;">Relatório de Acerto de Contas</h2>
                             <p style="margin: 5px 0 0 0; color: #64748b; font-size: 12px;">Emissão: ${new Date().toLocaleDateString('pt-BR')} ${new Date().toLocaleTimeString('pt-BR', {hour: '2-digit', minute:'2-digit'})}</p>
+                            <p style="margin: 5px 0 0 0; color: #64748b; font-size: 12px;">Filtro Aplicado: <b style="color: #000;">${filtroAcertoAtual.toUpperCase()}</b></p>
                             <p style="margin: 5px 0 0 0; color: #64748b; font-size: 12px;">Total de Contas: ${contas.length}</p>
                         </div>
                     </div>`;
 
-            html += '<table style="width: 100%; border-collapse: collapse; margin-top: 20px; font-size: 14px;"><thead><tr style="background: #f1f5f9; text-align: left; border-bottom: 2px solid #cbd5e1;"><th style="padding: 10px;">Venda Nº</th><th style="padding: 10px;">Cliente</th><th style="padding: 10px;">Vencimento</th><th style="padding: 10px;">Status</th><th style="padding: 10px; text-align: right;">Total da Venda</th><th style="padding: 10px; text-align: right;">Falta Receber</th></tr></thead><tbody>'; 
+            html += '<table style="width: 100%; border-collapse: collapse; margin-top: 20px; font-size: 14px;"><thead><tr style="background: #f1f5f9; text-align: left; border-bottom: 2px solid #cbd5e1;"><th style="padding: 10px;">Venda Nº</th><th style="padding: 10px;">Cliente</th><th style="padding: 10px;">Vencimento</th><th style="padding: 10px;">Status / Pagamento</th><th style="padding: 10px; text-align: right;">Total da Venda</th><th style="padding: 10px; text-align: right;">Falta Receber</th></tr></thead><tbody>'; 
             let totalDivida = 0; let totalFalta = 0; const hoje = new Date().toISOString().split('T')[0]; 
             contas.forEach(v => { 
                 const isPago = v.pagamento.startsWith('Acertado'); 
                 const isVencido = !isPago && v.vencimento < hoje; 
-                let statusTxt = isPago ? 'PAGO' : (isVencido ? 'VENCIDO' : 'A VENCER'); 
+                
+                let statusTxt = isVencido ? 'VENCIDO' : 'A VENCER'; 
+                if (isPago) {
+                    let metodoBaixa = v.pagamento.replace('Acertado (', '').replace(')', '');
+                    statusTxt = `PAGO (${metodoBaixa.toUpperCase()})`;
+                }
+
                 let restante = v.total - (v.valorPago || 0); 
                 totalDivida += v.total; totalFalta += restante; 
                 html += `<tr style="border-bottom: 1px solid #e2e8f0;"><td style="padding: 10px;"><b>#${formatId(v.id)}</b></td><td style="padding: 10px;">${v.cliente}</td><td style="padding: 10px; color: ${isVencido ? 'red' : 'black'};">${v.vencimento.split('-').reverse().join('/')}</td><td style="padding: 10px;">${statusTxt}</td><td style="padding: 10px; text-align: right;">R$ ${formatCurrency(v.total)}</td><td style="padding: 10px; text-align: right; color: ${restante > 0 ? '#b91c1c' : '#15803d'}; font-weight: bold;">R$ ${formatCurrency(restante)}</td></tr>`; 
