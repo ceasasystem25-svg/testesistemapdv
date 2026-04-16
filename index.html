@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Sistema de Vendas Pro v10.14 - Romaneio de Carga</title>
+    <title>Sistema de Vendas Pro v10.15 - Tipos de Saída e Logo Transparente</title>
     <style>
         :root { --primary: #2563eb; --success: #10b981; --danger: #ef4444; --warning: #f59e0b; --bg: #f3f4f6; --text: #1f2937; --info: #0ea5e9; }
         
@@ -11,7 +11,8 @@
         
         header { background: var(--primary); color: white; padding: 1rem 2rem; display: flex; justify-content: space-between; align-items: center; z-index: 100; flex-wrap: wrap; gap: 10px; flex-shrink: 0; }
         .logo-container { display: flex; align-items: center; gap: 10px; }
-        .logo-container img { max-height: 35px; border-radius: 4px; background: white; padding: 2px; }
+        /* ALTERAÇÃO: Fundo transparente e sem bordas brancas na logo do topo */
+        .logo-container img { max-height: 40px; border-radius: 4px; background: transparent; }
         
         nav { display: flex; flex-wrap: wrap; gap: 5px; }
         nav button { background: none; border: none; color: white; font-size: 0.9rem; cursor: pointer; padding: 0.6rem 1rem; border-radius: 6px; transition: 0.2s; }
@@ -76,7 +77,6 @@
 
         @media screen { #receipt-print { display: none; } }
         
-        /* IMPRESSORA TÉRMICA E RELATÓRIOS A4 */
         @media print {
             @page { margin: 0; } 
             body { margin: 0; padding: 0; background: #fff; height: auto !important; overflow: visible !important; }
@@ -85,7 +85,7 @@
             #receipt-print { 
                 display: block !important; 
                 position: relative !important;
-                width: 76mm; /* Default para o cupom. Para A4, o JS muda para 100% dinamicamente */
+                width: 76mm; 
                 margin: 0 auto; 
                 padding: 0 2mm; 
                 box-sizing: border-box; 
@@ -106,7 +106,7 @@
 
     <header class="no-print">
         <div class="logo-container">
-            <img src="https://dummyimage.com/150x50/fff/000.png&text=LOGO+AQUI" id="main-logo-img" alt="Logo da Empresa">
+            <img src="https://i.postimg.cc/cCj4sBRm/branco.png" id="main-logo-img" alt="Logo da Empresa">
             <h2 style="margin:0">VendaFlow Pro</h2>
         </div>
         <nav>
@@ -339,7 +339,14 @@
                 <div class="form-row">
                     <div class="form-group" style="max-width: 150px;"><label>Data</label><input type="date" id="v-data" required></div>
                     <div class="form-group"><label>Vendedor (Cód/Nome)</label><input type="text" id="v-vendedor" list="dl-vendedores" required autocomplete="off" onchange="autoFillVendedor()"><datalist id="dl-vendedores"></datalist></div>
-                    <div class="form-group" style="max-width: 150px;"><label>Tipo</label><select id="v-tipo"><option value="Venda">Venda</option><option value="Reposição">Reposição</option></select></div>
+                    <div class="form-group" style="max-width: 150px;"><label>Tipo</label>
+                        <select id="v-tipo">
+                            <option value="Venda">Venda</option>
+                            <option value="Bonificação">Bonificação</option>
+                            <option value="Reposição">Reposição</option>
+                            <option value="Perca">Perca</option>
+                        </select>
+                    </div>
                     <div class="form-group" style="flex:2"><label>Cliente (Cód/Nome)</label><input type="text" id="v-cliente" list="dl-clientes" required autocomplete="off" onchange="autoFillCliente()"><datalist id="dl-clientes"></datalist></div>
                 </div>
 
@@ -430,7 +437,7 @@
     <div id="receipt-print"></div>
 
     <script>
-        const LOGO_URL = "https://dummyimage.com/200x80/fff/000.png&text=SUA+LOGO";
+        const LOGO_URL = "https://i.postimg.cc/vZnDZkS4/preto.png";
         document.getElementById('main-logo-img').src = LOGO_URL;
 
         const formatCurrency = (value) => { return parseFloat(value || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }); };
@@ -635,7 +642,6 @@
             setTimeout(() => { document.getElementById('receipt-print').innerHTML = ''; }, 500);
         }
 
-        // --- RELATÓRIOS A4 PERSONALIZADOS ---
         function abrirModalImpressaoAgrupada() { 
             const checks = document.querySelectorAll('.check-venda:checked'); 
             if (checks.length === 0) return alert("Selecione."); 
@@ -686,7 +692,6 @@
             return html; 
         }
         
-        // --- NOVO: GERAR ROMANEIO DE CARGA ---
         function gerarRomaneio() {
             const checks = document.querySelectorAll('.check-venda:checked');
             if (checks.length === 0) return alert("Selecione as vendas (caixinhas) para gerar o romaneio de carga.");
@@ -734,7 +739,7 @@
             html += '<thead style="background: #f1f5f9; border-bottom: 2px solid #000;"><tr><th style="padding: 10px; text-align:left; width:15%;">Código</th><th style="padding: 10px; text-align:left; width:60%;">Produto</th><th style="padding: 10px; text-align:right; width:25%;">Qtd Total para Separar</th></tr></thead><tbody>';
 
             let produtosArray = Object.values(produtosAgrupados);
-            produtosArray.sort((a, b) => a.nome.localeCompare(b.nome)); // Ordem Alfabética
+            produtosArray.sort((a, b) => a.nome.localeCompare(b.nome)); 
 
             produtosArray.forEach(p => {
                 html += `<tr style="border-bottom: 1px solid #e2e8f0;">
