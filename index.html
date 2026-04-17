@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Sistema de Vendas Pro v10.22 - Dashboard Compacto</title>
+    <title>Sistema de Vendas Pro v10.23 - Ajuste de Impressão e Corte</title>
     <style>
         :root { --primary: #2563eb; --success: #10b981; --danger: #ef4444; --warning: #f59e0b; --bg: #f3f4f6; --text: #1f2937; --info: #0ea5e9; }
         
@@ -20,7 +20,6 @@
         
         .container { padding: 1.5rem; max-width: 1300px; margin: 0 auto; width: 100%; box-sizing: border-box; display: flex; flex-direction: column; flex-grow: 1; overflow: hidden; }
         
-        /* DASHBOARD COMPACTO */
         .dash-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1rem; margin-bottom: 1rem; flex-shrink: 0; }
         .dash-card { background: white; padding: 0.8rem 1.5rem; border-radius: 10px; box-shadow: 0 2px 4px rgba(0,0,0,0.05); border-left: 5px solid var(--primary); }
         .dash-card h4 { margin: 0; font-size: 0.75rem; color: #6b7280; text-transform: uppercase; }
@@ -72,7 +71,6 @@
         .modal-overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.6); justify-content: center; align-items: center; z-index: 1000; }
         .modal { background: white; padding: 2rem; border-radius: 12px; width: 95%; max-width: 900px; max-height: 90vh; overflow-y: auto; }
         
-        /* MODAL DE SISTEMA CUSTOMIZADO */
         #sys-modal-overlay { z-index: 2000; }
         #sys-modal-overlay .modal { max-width: 420px; padding: 2rem; text-align: center; border-radius: 12px; box-shadow: 0 10px 25px rgba(0,0,0,0.2); animation: popIn 0.2s ease-out; }
         #sys-modal-title { font-size: 1.25rem; margin-top: 0; margin-bottom: 10px; color: #1e293b; }
@@ -90,6 +88,7 @@
 
         @media screen { #receipt-print { display: none; } }
         
+        /* AJUSTES NO CSS DE IMPRESSÃO PARA QUEBRA DE PÁGINA */
         @media print {
             @page { margin: 0; } 
             body { margin: 0; padding: 0; background: #fff; height: auto !important; overflow: visible !important; }
@@ -100,7 +99,7 @@
                 position: relative !important;
                 width: 76mm; 
                 margin: 0 auto; 
-                padding: 0 2mm; 
+                padding: 0; 
                 box-sizing: border-box; 
                 color: #000 !important;
                 background: transparent; 
@@ -111,7 +110,8 @@
                 text-transform: uppercase;
             }
             #receipt-print * { color: #000 !important; visibility: visible; }
-            #receipt-print div:last-child { page-break-after: auto !important; }
+            /* Garante que o navegador respeite a quebra de página da classe */
+            .pagina-cupom { page-break-after: always; break-after: page; }
         }
     </style>
 </head>
@@ -119,8 +119,8 @@
 
     <header class="no-print">
         <div class="logo-container">
-            <img src="https://i.postimg.cc/cCj4sBRm/branco.png" id="main-logo-img" alt="Logo da Empresa">
-            <h2 style="margin:0">LA SISTEMAS-PDV VAREJÃO</h2>
+            <img src="https://dummyimage.com/150x50/2563eb/ffffff.png&text=LOGO+AQUI" id="main-logo-img" alt="Logo da Empresa">
+            <h2 style="margin:0">VendaFlow Pro</h2>
         </div>
         <nav>
             <button id="nav-home" onclick="navigate('home')">Início/Vendas</button>
@@ -482,7 +482,7 @@
         </div>
     </div>
 
-    <div id="receipt-print"></div>
+    <div id="receipt-print" style="padding: 0 5mm;"></div>
 
     <script>
         // --- FUNÇÕES DE ALERTA DO SISTEMA CUSTOMIZADAS ---
@@ -499,7 +499,7 @@
                 
                 btnOk.onclick = () => { overlay.style.display = 'none'; resolve(); };
                 overlay.style.display = 'flex';
-                btnOk.focus(); // Permite fechar pressionando Enter
+                btnOk.focus(); 
             });
         }
 
@@ -525,7 +525,7 @@
             });
         }
 
-        const LOGO_URL = "https://i.postimg.cc/vZnDZkS4/preto.png";
+        const LOGO_URL = "https://dummyimage.com/200x80/fff/000.png&text=SUA+LOGO";
         document.getElementById('main-logo-img').src = LOGO_URL;
 
         const formatCurrency = (value) => { return parseFloat(value || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }); };
@@ -609,7 +609,7 @@
         function editarSelecionado() { const checks = document.querySelectorAll('.check-venda:checked'); if(checks.length !== 1) return sysAlert("Selecione exatamente UMA venda na caixa de seleção para editar."); const idVenda = parseInt(checks[0].value); const v = db.vendas.find(v => v.id === idVenda); if(v && v.status === 'Ativa') { editSale(idVenda); } else { sysAlert("Vendas canceladas não podem ser editadas."); } }
         async function cancelarSelecionados() { const checks = document.querySelectorAll('.check-venda:checked'); if(checks.length === 0) return sysAlert("Selecione pelo menos uma venda para cancelar."); if(await sysConfirm(`Tem certeza que deseja cancelar as ${checks.length} venda(s) selecionada(s)?`, true)) { checks.forEach(cb => { const id = parseInt(cb.value); const venda = db.vendas.find(v => v.id === id); if(venda) venda.status = 'Cancelada'; }); saveDB(); renderSales(); } }
         
-        // --- LÓGICA DE IMPRESSÃO ---
+        // --- LÓGICA DE IMPRESSÃO REFATORADA ---
         function abrirModalImpressaoOpcoes() {
             const checks = document.querySelectorAll('.check-venda:checked');
             if(checks.length === 0) return sysAlert("Selecione pelo menos uma venda para imprimir.");
@@ -734,7 +734,7 @@
                 html += `</table>`;
 
                 if(tipo === 'empresa') {
-                    html += `<br><br><br><br><p style="margin:5px 0; text-align:center;"><em>Assinatura do Cliente:</em></p><p style="text-align:center;">_________________________________</p>`;
+                    html += `<br><br><br><p style="margin:5px 0; text-align:center;"><em>Assinatura do Cliente:</em></p><p style="text-align:center;">_________________________________</p>`;
                 }
 
             } else if (tipo === 'carregador') {
@@ -760,6 +760,7 @@
                 html += `</table>`;
                 html += `<br><br><br><p style="margin:5px 0; text-align:center;"><em>Assinatura do Conferente:</em></p><p style="text-align:center;">___________________________</p>`;
             }
+            
             return html;
         }
 
@@ -769,16 +770,28 @@
             
             vendas.forEach((v, indexVenda) => {
                 tiposArray.forEach((tipo, indexTipo) => {
+                    // CADA CUPOM FICA DENTRO DESSA DIV COM QUEBRA DE PÁGINA OBRIGATÓRIA
+                    allHtml += `<div class="pagina-cupom">`;
                     allHtml += gerarHtmlCupom(v, tipo);
-                    if (indexVenda < vendas.length - 1 || indexTipo < tiposArray.length - 1) { 
-                        allHtml += '<div style="page-break-after: always;"></div>'; 
-                    }
+                    
+                    // AVANÇO DE PAPEL DE SEGURANÇA NO FINAL DE CADA VIA
+                    // Isso garante que a guilhotina ou a sua mão não corte a logo da PRÓXIMA página
+                    allHtml += `<br><br><br><br>`; 
+                    allHtml += `<div style="text-align:center; font-size:10px;">--✂--</div>`;
+                    allHtml += `<br><br><br>`;
+                    
+                    allHtml += `</div>`;
                 });
             });
 
             document.getElementById('receipt-print').innerHTML = allHtml; 
-            window.print();
-            setTimeout(() => { document.getElementById('receipt-print').innerHTML = ''; }, 500);
+            
+            // Um pequeno atraso de 300ms antes de chamar window.print() 
+            // dá tempo do navegador renderizar a logo escondida no HTML.
+            setTimeout(() => {
+                window.print();
+                setTimeout(() => { document.getElementById('receipt-print').innerHTML = ''; }, 500);
+            }, 300);
         }
 
         function abrirModalImpressaoAgrupada() { 
@@ -799,7 +812,7 @@
         }
 
         function gerarHTMLRelatorioAgrupado(vendas) { 
-            let html = '<div style="padding: 20px; background: white; font-family: Arial, sans-serif;">';
+            let html = '<div class="pagina-cupom" style="padding: 20px; background: white; font-family: Arial, sans-serif;">';
             html += `<div style="display: flex; align-items: center; justify-content: space-between; border-bottom: 2px solid #000; padding-bottom: 15px; margin-bottom: 20px;">
                         <div style="display: flex; align-items: center; gap: 15px;">
                             <img src="${LOGO_URL}" style="max-height: 80px;">
@@ -827,7 +840,9 @@
                 } 
                 html += `<tr><td colspan="5" style="padding-bottom: 15px;"></td></tr>`; 
             }); 
-            html += `<tr style="border-top: 2px solid #000; font-weight: bold; font-size: 15px;"><td colspan="3" style="padding: 10px;"></td><td style="text-align: right; padding: 10px;">TOTAL (${vendas.length} vendas):</td><td style="text-align: right; padding: 10px; color: #b91c1c;">R$ ${formatCurrency(totalGeral)}</td></tr></tbody></table></div>`; 
+            html += `<tr style="border-top: 2px solid #000; font-weight: bold; font-size: 15px;"><td colspan="3" style="padding: 10px;"></td><td style="text-align: right; padding: 10px;">TOTAL (${vendas.length} vendas):</td><td style="text-align: right; padding: 10px; color: #b91c1c;">R$ ${formatCurrency(totalGeral)}</td></tr></tbody></table>`;
+            
+            html += `<div style="height: 30mm;"></div></div>`; 
             return html; 
         }
         
@@ -856,7 +871,7 @@
 
             let nomeVendedor = Array.from(vendedores).join(', ');
 
-            let html = '<div style="padding: 20px; background: white; font-family: Arial, sans-serif;">';
+            let html = '<div class="pagina-cupom" style="padding: 20px; background: white; font-family: Arial, sans-serif;">';
             html += `<div style="display: flex; align-items: center; justify-content: space-between; border-bottom: 2px solid #000; padding-bottom: 15px; margin-bottom: 20px;">
                         <div style="display: flex; align-items: center; gap: 15px;">
                             <img src="${LOGO_URL}" style="max-height: 80px;">
@@ -894,7 +909,7 @@
 
             html += `</tbody></table>`;
             html += `<br><br><br><br><p style="margin:5px 0; text-align:center;"><em>Assinatura do Conferente / Motorista:</em></p><p style="text-align:center;">__________________________________________________</p>`;
-            html += `</div>`;
+            html += `<div style="height: 30mm;"></div></div>`;
 
             document.getElementById('receipt-print').style.width = '100%';
             document.getElementById('receipt-print').innerHTML = html;
@@ -918,7 +933,7 @@
             } 
             if(contas.length === 0) return sysAlert("Erro ao carregar contas."); 
 
-            let html = '<div style="padding: 20px; background: white; font-family: Arial, sans-serif;">';
+            let html = '<div class="pagina-cupom" style="padding: 20px; background: white; font-family: Arial, sans-serif;">';
             html += `<div style="display: flex; align-items: center; justify-content: space-between; border-bottom: 2px solid #000; padding-bottom: 15px; margin-bottom: 20px;">
                         <div style="display: flex; align-items: center; gap: 15px;">
                             <img src="${LOGO_URL}" style="max-height: 80px;">
@@ -951,7 +966,8 @@
                 totalDivida += v.total; totalFalta += restante; 
                 html += `<tr style="border-bottom: 1px solid #e2e8f0;"><td style="padding: 10px;"><b>#${formatId(v.id)}</b></td><td style="padding: 10px;">${v.cliente}</td><td style="padding: 10px; color: ${isVencido ? 'red' : 'black'};">${v.vencimento.split('-').reverse().join('/')}</td><td style="padding: 10px;">${statusTxt}</td><td style="padding: 10px; text-align: right;">R$ ${formatCurrency(v.total)}</td><td style="padding: 10px; text-align: right; color: ${restante > 0 ? '#b91c1c' : '#15803d'}; font-weight: bold;">R$ ${formatCurrency(restante)}</td></tr>`; 
             }); 
-            html += `</tbody><tfoot style="background: #f8fafc; font-weight: bold;"><tr style="border-top: 2px solid #000;"><td colspan="4" style="padding: 15px; text-align: right;">TOTAIS:</td><td style="padding: 15px; text-align: right;">R$ ${formatCurrency(totalDivida)}</td><td style="padding: 15px; text-align: right; color: #b91c1c; font-size: 16px;">R$ ${formatCurrency(totalFalta)}</td></tr></tfoot></table></div>`; 
+            html += `</tbody><tfoot style="background: #f8fafc; font-weight: bold;"><tr style="border-top: 2px solid #000;"><td colspan="4" style="padding: 15px; text-align: right;">TOTAIS:</td><td style="padding: 15px; text-align: right;">R$ ${formatCurrency(totalDivida)}</td><td style="padding: 15px; text-align: right; color: #b91c1c; font-size: 16px;">R$ ${formatCurrency(totalFalta)}</td></tr></tfoot></table>`;
+            html += `<div style="height: 30mm;"></div></div>`; 
             
             document.getElementById('receipt-print').style.width = '100%'; 
             document.getElementById('receipt-print').innerHTML = html; 
